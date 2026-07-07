@@ -1,6 +1,10 @@
-# Distill v3
+# Distill
 
 A Firefox extension (Manifest V3) that extracts web page content, generates AI summaries via a sidebar, supports follow-up Q&A chat with streaming responses, and exports unified Markdown documents.
+
+> Installed version is shown in the sidebar's ❓ Help menu; the current release is always
+> [on GitHub](https://github.com/dstaulcu/distill/releases). This README intentionally
+> doesn't hardcode a version number so it can't go stale.
 
 ## Features
 
@@ -68,7 +72,7 @@ graph TB
     end
 
     subgraph "Distill Extension"
-        EXT[Distill v3 Extension]
+        EXT[Distill Extension]
     end
 
     subgraph "External Services"
