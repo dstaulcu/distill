@@ -1,0 +1,47 @@
+name: Feature request
+description: Suggest an idea or improvement for Distill.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Please confirm this isn't already shipped
+        in the latest release before filing — check the sidebar's **❓ Help**
+        menu for your installed version, and compare against
+        https://github.com/dstaulcu/distill/releases
+
+  - type: input
+    id: version
+    attributes:
+      label: Distill version
+      description: The version shown in the sidebar's ❓ Help menu.
+      placeholder: e.g. 4.0.0
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: latest-release
+    attributes:
+      label: Latest release confirmation
+      options:
+        - label: >-
+            I've checked the Releases page and confirmed this feature isn't
+            already available in the latest release.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What are you trying to do that Distill doesn't support today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to see happen?
+    validations:
+      required: false

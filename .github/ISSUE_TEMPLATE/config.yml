@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Check the latest release first
+    url: https://github.com/dstaulcu/distill/releases
+    about: >-
+      Most reported bugs turn out to be already fixed. Please confirm you're
+      on the latest release (check the sidebar's ❓ Help menu for your
+      installed version) before filing a bug or feature request.

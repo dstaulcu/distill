@@ -1,0 +1,61 @@
+{
+  "manifest_version": 3,
+  "name": "Distill",
+  "version": "4.0.0",
+  "description": "Extract, summarize, and export web page content as Markdown.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "distill@example.com",
+      "strict_min_version": "109.0"
+    }
+  },
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "downloads",
+    "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": [
+      "src/background/main.ts"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/content/main.ts"
+      ]
+    }
+  ],
+  "sidebar_action": {
+    "default_panel": "src/sidebar/sidebar.html",
+    "default_title": "Distill",
+    "default_icon": {
+      "16": "icons/icon.svg",
+      "32": "icons/icon.svg",
+      "48": "icons/icon.svg"
+    }
+  },
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_title": "Toggle Distill Sidebar",
+    "default_icon": {
+      "16": "icons/icon.svg",
+      "32": "icons/icon.svg",
+      "48": "icons/icon.svg"
+    }
+  }
+}

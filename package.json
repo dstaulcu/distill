@@ -1,0 +1,31 @@
+{
+  "name": "distill-v3",
+  "version": "4.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:regression": "vitest run -t CF-",
+    "typecheck": "tsc --noEmit",
+    "release": "node scripts/release.mjs"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.5.0",
+    "turndown": "^7.2.0",
+    "turndown-plugin-gfm": "^1.0.2"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^28.0.3",
+    "@types/webextension-polyfill": "^0.12.5",
+    "fast-check": "^3.22.0",
+    "jsdom": "^25.0.1",
+    "jszip": "^3.10.1",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0",
+    "vite-plugin-web-extension": "^4.3.0",
+    "vitest": "^2.1.0"
+  }
+}

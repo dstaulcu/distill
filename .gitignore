@@ -1,0 +1,10 @@
+node_modules/
+dist/
+web-ext-artifacts/
+*.log
+npm-debug.log*
+
+# Local/machine-specific
+.claude/settings.local.json
+.DS_Store
+Thumbs.db

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Distill Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="page-header">
+      <h1>Distill Settings</h1>
+    </header>
+
+    <main class="settings-container">
+      <!-- AI Endpoint Configuration -->
+      <section class="settings-section" id="section-ai">
+        <h2>AI Endpoint</h2>
+        <div class="form-group">
+          <label for="ai-base-url">Base URL</label>
+          <input type="url" id="ai-base-url" placeholder="https://api.openai.com" autocomplete="off" />
+          <span class="field-error" id="error-ai-base-url"></span>
+        </div>
+        <div class="form-group">
+          <label for="ai-model-id">Model</label>
+          <div class="model-selector">
+            <select id="ai-model-select" aria-label="Select model">
+              <option value="">— Select a model —</option>
+            </select>
+            <button id="btn-fetch-models" type="button" class="btn-small btn-secondary">Refresh</button>
+          </div>
+          <input type="text" id="ai-model-id" placeholder="Or type model ID manually" autocomplete="off" class="model-manual-input" />
+          <span class="field-error" id="error-ai-model-id"></span>
+        </div>
+        <div class="form-group">
+          <label for="ai-api-key">API Key</label>
+          <input type="password" id="ai-api-key" placeholder="sk-..." autocomplete="off" />
+          <span class="field-error" id="error-ai-api-key"></span>
+        </div>
+        <div class="form-group form-actions">
+          <button id="btn-test-connection" type="button">Test Connection</button>
+          <span class="connection-status" id="connection-status"></span>
+        </div>
+      </section>
+
+      <!-- Skill Library & Personas -->
+      <section class="settings-section" id="section-skills">
+        <h2>Skill Library</h2>
+        <p class="section-description">Upload skill files (.md) to persist across sessions (max 20).</p>
+        <div id="skills-list" class="skills-list"></div>
+        <div class="form-group form-actions">
+          <button id="btn-add-skill" type="button">Upload Skill</button>
+          <input type="file" id="skill-file-input" accept=".md" style="display:none" />
+        </div>
+
+        <h3>Personas</h3>
+        <p class="section-description">Named combinations of skills that activate together (max 10).</p>
+        <div id="personas-list" class="personas-list"></div>
+        <div class="form-group form-actions">
+          <button id="btn-add-persona" type="button">Create Persona</button>
+        </div>
+        <!-- Persona editor (hidden) -->
+        <div id="persona-editor" class="persona-editor hidden">
+          <h4 id="persona-editor-title">Create Persona</h4>
+          <div class="form-group">
+            <label for="persona-name">Name</label>
+            <input type="text" id="persona-name" maxlength="64" />
+            <span class="field-error" id="error-persona-name"></span>
+          </div>
+          <div class="form-group">
+            <label for="persona-description">Description</label>
+            <input type="text" id="persona-description" maxlength="200" />
+          </div>
+          <div class="form-group">
+            <label>Skills (order determines primary voice)</label>
+            <div id="persona-skill-checkboxes" class="checkbox-group"></div>
+          </div>
+          <div class="form-group form-actions">
+            <button id="btn-save-persona" type="button">Save</button>
+            <button id="btn-cancel-persona" type="button" class="btn-secondary">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Site Pattern Management -->
+      <section class="settings-section" id="section-patterns">
+        <h2>Site Patterns</h2>
+        <p class="section-description">User-defined content selectors for specific sites (max 50).</p>
+        <div id="patterns-list" class="patterns-list"></div>
+        <div class="form-group form-actions">
+          <button id="btn-add-pattern" type="button">Add Pattern</button>
+        </div>
+        <!-- Pattern edit dialog (hidden by default) -->
+        <div id="pattern-editor" class="pattern-editor hidden">
+          <h3 id="pattern-editor-title">Add Site Pattern</h3>
+          <div class="form-group">
+            <label for="pattern-url">URL Match Pattern</label>
+            <input type="text" id="pattern-url" placeholder="*://*.example.com/*" />
+            <span class="field-error" id="error-pattern-url"></span>
+          </div>
+          <div class="form-group">
+            <label for="pattern-selector">Content Selector</label>
+            <input type="text" id="pattern-selector" placeholder="article, .post-content" maxlength="1024" />
+            <span class="field-error" id="error-pattern-selector"></span>
+          </div>
+          <div class="form-group">
+            <label>Selector Preview</label>
+            <div id="selector-preview" class="selector-preview">No preview available</div>
+          </div>
+          <div class="form-group form-actions">
+            <button id="btn-save-pattern" type="button">Save</button>
+            <button id="btn-cancel-pattern" type="button" class="btn-secondary">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Export Preferences -->
+      <section class="settings-section" id="section-export">
+        <h2>Export Preferences</h2>
+        <div class="form-group">
+          <label for="export-filename-pattern">Filename Pattern</label>
+          <input type="text" id="export-filename-pattern" placeholder="YYYY-MM-DD-slugified-title" />
+          <span class="hint">Tokens: YYYY, MM, DD, slugified-title</span>
+          <span class="field-error" id="error-export-filename-pattern"></span>
+        </div>
+        <div class="form-group">
+          <label>Frontmatter Fields</label>
+          <div id="frontmatter-fields" class="checkbox-group">
+            <label><input type="checkbox" value="title" /> Title</label>
+            <label><input type="checkbox" value="author" /> Author</label>
+            <label><input type="checkbox" value="source_url" /> Source URL</label>
+            <label><input type="checkbox" value="publication_date" /> Publication Date</label>
+            <label><input type="checkbox" value="capture_date" /> Capture Date</label>
+            <label><input type="checkbox" value="site_name" /> Site Name</label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Auto-Export Configurations -->
+      <section class="settings-section" id="section-auto-export">
+        <h2>Auto-Export Configurations</h2>
+        <p class="section-description">Sites configured for automatic periodic export.</p>
+        <div id="auto-export-list" class="auto-export-list"></div>
+      </section>
+
+      <!-- Save Button -->
+      <div class="form-group form-actions save-bar">
+        <button id="btn-save-settings" type="button">Save Settings</button>
+        <span id="save-status" class="save-status"></span>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="options.ts"></script>
+</body>
+</html>
