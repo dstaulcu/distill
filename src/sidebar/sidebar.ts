@@ -24,7 +24,7 @@ type SidebarState =
   | { readonly phase: "loading" }
   | { readonly phase: "no-page" }
   | { readonly phase: "persona-chat"; readonly messages: ReadonlyArray<PortConversationMessage> }
-  | { readonly phase: "summarizing"; readonly title: string; readonly partialContent: string }
+  | { readonly phase: "summarizing"; readonly title: string; readonly partialContent: string; readonly returnPhase: "ready" | "persona-chat" }
   | { readonly phase: "ready"; readonly messages: ReadonlyArray<PortConversationMessage> }
   | { readonly phase: "streaming"; readonly messages: ReadonlyArray<PortConversationMessage>; readonly partial: string; readonly returnPhase: "ready" | "persona-chat" }
   | {
@@ -262,7 +262,10 @@ function handleControllerMessage(msg: ControllerToSidebarMessage): void {
         timestamp: new Date().toISOString(),
       };
       if (state.phase === "summarizing") {
-        state = { phase: "ready", messages: hasContent ? [endMsg] : [] };
+        const newMessages = hasContent ? [endMsg] : [];
+        state = state.returnPhase === "persona-chat"
+          ? { phase: "persona-chat", messages: newMessages }
+          : { phase: "ready", messages: newMessages };
       } else if (state.phase === "streaming") {
         const returnPhase = state.returnPhase;
         const newMessages = hasContent ? [...state.messages, endMsg] : [...state.messages];
@@ -302,8 +305,9 @@ function handleControllerMessage(msg: ControllerToSidebarMessage): void {
     case "configError":
       if (state.phase === "ready" || state.phase === "summarizing" || state.phase === "persona-chat") {
         configWarning = msg.reason;
-        // summarizing can't stay mid-stream without AI; clear to ready (persona-chat preserved)
-        if (state.phase === "summarizing") state = { phase: "ready", messages: [] };
+        // summarizing can't stay mid-stream without AI; drop back to the
+        // phase it was summarizing for, preserving persona-chat's context
+        if (state.phase === "summarizing") state = { phase: state.returnPhase, messages: [] };
       } else {
         state = { phase: "config-error", reason: msg.reason };
       }
@@ -595,7 +599,12 @@ function renderPersonaChat(): HTMLElement {
   // Chat messages (if any)
   if (personaState.messages.length > 0) {
     wrapper.appendChild(renderMessages(personaState.messages));
-  } else if (contextTabs.length === 0) {
+  } else if (contextTabs.length > 0) {
+    // Context has been added but no conversation started yet — offer the
+    // same Summarize entry point the "ready" phase gives for a single page,
+    // rather than leaving only open-ended chat as the sole way in.
+    wrapper.appendChild(renderPersonaSummarizeAction());
+  } else {
     // Empty state hint
     const hint = el("p", "persona-chat-hint");
     hint.textContent = "Add page context above, select a persona, then start chatting.";
@@ -604,6 +613,25 @@ function renderPersonaChat(): HTMLElement {
 
   // Chat input — always visible in persona-chat mode
   wrapper.appendChild(renderInputArea());
+
+  return wrapper;
+}
+
+function renderPersonaSummarizeAction(): HTMLElement {
+  const wrapper = el("div", "persona-summarize-action");
+
+  const hint = el("p", "persona-chat-hint");
+  hint.textContent = "Context added — summarize it, or start chatting below.";
+  wrapper.appendChild(hint);
+
+  const summarizeBtn = el("button", "btn btn-summarize") as HTMLButtonElement;
+  summarizeBtn.textContent = "Summarize";
+  summarizeBtn.addEventListener("click", () => {
+    sendToController({ type: "summarize" });
+    state = { phase: "summarizing", title: "", partialContent: "", returnPhase: "persona-chat" };
+    render();
+  });
+  wrapper.appendChild(summarizeBtn);
 
   return wrapper;
 }
@@ -638,7 +666,7 @@ function renderReadyNoSummary(): HTMLElement {
   summarizeBtn.textContent = "Summarize";
   summarizeBtn.addEventListener("click", () => {
     sendToController({ type: "summarize" });
-    state = { phase: "summarizing", title: "", partialContent: "" };
+    state = { phase: "summarizing", title: "", partialContent: "", returnPhase: "ready" };
     render();
   });
   actions.appendChild(summarizeBtn);

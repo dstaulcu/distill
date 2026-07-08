@@ -191,6 +191,11 @@ Convenience features; regressions matter but are not release-blocking.
 - When the active tab is `about:blank` (or the user clicks "new chat" ✦), the sidebar enters
   persona-chat: no extraction, chat input always enabled, empty context set, conversation
   cached per tab like CF-3.4.
+- Once a context tab is added (SF-1) and no conversation has started yet, a Summarize action
+  is offered alongside the chat input — adding page context isn't a dead end that forces an
+  open-ended chat message just to get a structured summary. Summarizing from persona-chat
+  streams exactly like CF-2, and returns to persona-chat (not "ready") when it finishes, so
+  the multi-tab context and persona/skill selection are preserved.
 
 ### SF-3 Skills & personas
 

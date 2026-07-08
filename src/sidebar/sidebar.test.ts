@@ -250,6 +250,49 @@ describe("CF-2.2 / CF-2.5 summarization streaming and abort", () => {
   });
 });
 
+describe("SF-2 persona-chat summarize", () => {
+  const otherTabAdded: ControllerToSidebarMessage = {
+    type: "contextTabAdded",
+    tabId: 99,
+    url: "https://example.com/other",
+    title: "Other Article",
+    confidence: "high",
+  };
+
+  it("offers a Summarize action once a context tab is added, before any messages exist", async () => {
+    await loadSidebar();
+    emit({ type: "personaModeReady", messages: [] });
+
+    // No context yet — no way to summarize nothing.
+    expect(app().querySelector(".btn-summarize")).toBeNull();
+
+    emit(otherTabAdded);
+
+    expect(app().querySelector(".btn-summarize")).not.toBeNull();
+  });
+
+  it("summarizing from persona-chat sends summarize and returns to persona-chat (not ready) after the stream ends", async () => {
+    await loadSidebar();
+    emit({ type: "personaModeReady", messages: [] });
+    emit(otherTabAdded);
+
+    (app().querySelector(".btn-summarize") as HTMLButtonElement).click();
+
+    expect(mockPort.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "summarize" }),
+    );
+
+    emit({ type: "streamStart" });
+    emit({ type: "streamEnd", fullContent: "Findings: it's a good article." });
+
+    expect(app().textContent).toContain("Findings");
+    // Persona-chat's Reset/New Chat header buttons don't show for "ready" —
+    // staying out of "ready" proves the round-trip preserved persona-chat's
+    // multi-tab context semantics instead of collapsing to single-tab "ready".
+    expect(app().querySelector(".btn-reset")).toBeNull();
+  });
+});
+
 describe("CF-3.3 stream errors and retry", () => {
   async function reachStreamingWithHistory(): Promise<void> {
     await loadSidebar();
