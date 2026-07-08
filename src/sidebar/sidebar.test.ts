@@ -390,3 +390,40 @@ describe("CF-4.4 export destination and clipboard delivery", () => {
     );
   });
 });
+
+describe("CF-6.3 element-picker recovery hint", () => {
+  it("shows the picker hint when a fresh extraction reports low confidence", async () => {
+    await loadSidebar();
+    emit({ ...contextLoaded, confidence: "low" });
+
+    expect(app().querySelector(".picker-link")).not.toBeNull();
+  });
+
+  it("does not show the picker hint when confidence is high", async () => {
+    await loadSidebar();
+    emit(contextLoaded);
+
+    expect(app().querySelector(".picker-link")).toBeNull();
+  });
+
+  it("shows the picker hint after a cached low-confidence session is restored via contextTabAdded, not just on fresh contextLoaded", async () => {
+    await loadSidebar();
+
+    // A restored cached session (revisiting a tab already seen this browser
+    // session) reports its confidence via conversationRestored + contextTabAdded
+    // rather than contextLoaded — the recovery hint must still reflect it.
+    emit({ type: "conversationRestored", messages: [{ role: "assistant", content: "Summary", timestamp: "t" }] });
+    emit({ type: "contextTabAdded", tabId: 42, url: "https://example.com/article", title: "Thin page", confidence: "low" });
+
+    expect(app().querySelector(".picker-link")).not.toBeNull();
+  });
+
+  it("does not leak a secondary context tab's low confidence onto the primary tab's hint", async () => {
+    await loadSidebar();
+    emit(contextLoaded); // primary tab (42), high confidence
+
+    emit({ type: "contextTabAdded", tabId: 99, url: "https://example.com/other", title: "Other thin page", confidence: "low" });
+
+    expect(app().querySelector(".picker-link")).toBeNull();
+  });
+});

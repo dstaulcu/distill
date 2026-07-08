@@ -168,6 +168,11 @@ function handleControllerMessage(msg: ControllerToSidebarMessage): void {
       if (!contextTabs.some((t) => t.tabId === msg.tabId)) {
         contextTabs = [...contextTabs, { tabId: msg.tabId, url: msg.url, title: msg.title, confidence: msg.confidence }];
       }
+      // A restored cached session reports its confidence here (not via
+      // contextLoaded) — the picker recovery hint must still reflect it (CF-6.3).
+      if (msg.tabId === currentTabId) {
+        lowConfidence = msg.confidence === "low";
+      }
       // Close the tab picker after adding
       showTabPicker = false;
       render();
