@@ -244,14 +244,16 @@ Convenience features; regressions matter but are not release-blocking.
 - Model dropdown populated from `GET <base>/v1/models` (silent failure, manual entry always
   possible; the saved model is appended as "(not found on server)" if absent).
 
-### SF-7 Help menu (version & links)
+### SF-7 Help menu (version, settings & links)
 
 - The sidebar header shows a Help control in every phase (loading, error, config-error
   included, not just when content is loaded). Opening it displays the installed extension
-  version (read from the manifest) plus links to the project's GitHub Issues and Releases
-  pages, opened in a new tab. It is purely static — no network call checks for a newer
-  release. Opening/closing follows the same explicit toggle-button / close-button
-  convention as the tab picker (SF-1); there is no outside-click-to-close.
+  version (read from the manifest), a "Settings" entry that opens the extension's options
+  page (`browser.runtime.openOptionsPage()`) and closes the menu, plus links to the
+  project's GitHub Issues and Releases pages, opened in a new tab. It is purely static —
+  no network call checks for a newer release. Opening/closing follows the same explicit
+  toggle-button / close-button convention as the tab picker (SF-1); there is no
+  outside-click-to-close.
 
 ---
 
