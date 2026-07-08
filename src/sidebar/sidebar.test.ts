@@ -177,7 +177,7 @@ describe("SF-7 Help menu", () => {
 
     (app().querySelector(".btn-help") as HTMLButtonElement).click();
 
-    const links = app().querySelectorAll<HTMLAnchorElement>(".help-menu-link");
+    const links = app().querySelectorAll<HTMLAnchorElement>(".help-menu-external");
     expect(links.length).toBe(2);
     expect(Array.from(links).map((a) => a.href)).toEqual([
       "https://github.com/dstaulcu/distill/issues",
@@ -187,6 +187,21 @@ describe("SF-7 Help menu", () => {
       expect(link.target).toBe("_blank");
       expect(link.rel).toBe("noopener");
     }
+  });
+
+  it("has a Settings entry that opens the options page and closes the menu", async () => {
+    await loadSidebar();
+
+    (app().querySelector(".btn-help") as HTMLButtonElement).click();
+
+    const settingsLink = app().querySelector<HTMLAnchorElement>(".help-menu-settings");
+    expect(settingsLink).not.toBeNull();
+    expect(settingsLink?.textContent).toContain("Settings");
+
+    settingsLink!.click();
+
+    expect(browser.runtime.openOptionsPage).toHaveBeenCalled();
+    expect(app().querySelector(".help-menu-dropdown")).toBeNull();
   });
 });
 

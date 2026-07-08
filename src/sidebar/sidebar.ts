@@ -535,14 +535,25 @@ function renderHeader(): HTMLElement {
     version.textContent = `Distill v${EXTENSION_VERSION}`;
     helpDropdown.appendChild(version);
 
-    const issuesLink = el("a", "help-menu-link") as HTMLAnchorElement;
+    const settingsLink = el("a", "help-menu-link help-menu-settings") as HTMLAnchorElement;
+    settingsLink.href = "#";
+    settingsLink.textContent = "⚙️ Settings";
+    settingsLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      showHelpMenu = false;
+      browser.runtime.openOptionsPage();
+      render();
+    });
+    helpDropdown.appendChild(settingsLink);
+
+    const issuesLink = el("a", "help-menu-link help-menu-external") as HTMLAnchorElement;
     issuesLink.href = "https://github.com/dstaulcu/distill/issues";
     issuesLink.target = "_blank";
     issuesLink.rel = "noopener";
     issuesLink.textContent = "Report an issue";
     helpDropdown.appendChild(issuesLink);
 
-    const releasesLink = el("a", "help-menu-link") as HTMLAnchorElement;
+    const releasesLink = el("a", "help-menu-link help-menu-external") as HTMLAnchorElement;
     releasesLink.href = "https://github.com/dstaulcu/distill/releases";
     releasesLink.target = "_blank";
     releasesLink.rel = "noopener";
