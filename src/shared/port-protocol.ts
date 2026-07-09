@@ -18,6 +18,7 @@ export type SidebarToControllerMessage =
   | { readonly type: "autoExportDisable"; readonly origin: string }
   | { readonly type: "autoExportStatusRequest"; readonly tabId: number }
   | { readonly type: "loadSkill"; readonly raw: string }
+  | { readonly type: "generateSkillFromContext" }
   | { readonly type: "clearSkill" }
   | { readonly type: "getLibrary" }
   | { readonly type: "activateSkill"; readonly skillId: string }
@@ -40,6 +41,7 @@ export type ControllerToSidebarMessage =
   | { readonly type: "configError"; readonly reason: string }
   | { readonly type: "autoExportStatus"; readonly status: PortAutoExportStatus | null }
   | { readonly type: "skillLoaded"; readonly name: string; readonly description: string; readonly activation: string | null }
+  | { readonly type: "skillGenerationStarted" }
   | { readonly type: "skillCleared" }
   | { readonly type: "skillError"; readonly errors: readonly string[] }
   | { readonly type: "libraryState"; readonly library: SkillLibrarySnapshot }
@@ -112,6 +114,7 @@ export function isSidebarToControllerMessage(value: unknown): value is SidebarTo
     "autoExportDisable",
     "autoExportStatusRequest",
     "loadSkill",
+    "generateSkillFromContext",
     "clearSkill",
     "getLibrary",
     "activateSkill",
@@ -146,6 +149,7 @@ export function isControllerToSidebarMessage(value: unknown): value is Controlle
     "configError",
     "autoExportStatus",
     "skillLoaded",
+    "skillGenerationStarted",
     "skillCleared",
     "skillError",
     "libraryState",

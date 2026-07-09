@@ -427,3 +427,58 @@ describe("CF-6.3 element-picker recovery hint", () => {
     expect(app().querySelector(".picker-link")).toBeNull();
   });
 });
+
+describe("SF-3 Create Skill from Tabs", () => {
+  it("is disabled before any context tab is loaded", async () => {
+    await loadSidebar();
+
+    const btn = app().querySelector<HTMLButtonElement>(".btn-generate-skill");
+    expect(btn).not.toBeNull();
+    expect(btn!.disabled).toBe(true);
+  });
+
+  it("is enabled once a context tab is loaded and sends generateSkillFromContext on click", async () => {
+    await loadSidebar();
+    emit(contextLoaded);
+
+    const btn = app().querySelector<HTMLButtonElement>(".btn-generate-skill");
+    expect(btn!.disabled).toBe(false);
+
+    btn!.click();
+
+    expect(mockPort.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "generateSkillFromContext" }),
+    );
+  });
+
+  it("shows a generating state while the AI derives the skill, and clears it on skillLoaded", async () => {
+    await loadSidebar();
+    emit(contextLoaded);
+
+    (app().querySelector(".btn-generate-skill") as HTMLButtonElement).click();
+    emit({ type: "skillGenerationStarted" });
+
+    let btn = app().querySelector<HTMLButtonElement>(".btn-generate-skill");
+    expect(btn!.disabled).toBe(true);
+    expect(btn!.textContent).toContain("Generating");
+
+    emit({ type: "skillLoaded", name: "Derived Skill", description: "Derived from tabs", activation: null });
+
+    btn = app().querySelector<HTMLButtonElement>(".btn-generate-skill");
+    expect(btn!.disabled).toBe(false);
+    expect(btn!.textContent).toBe("Create Skill from Tabs");
+  });
+
+  it("clears the generating state and shows the error on skillError", async () => {
+    await loadSidebar();
+    emit(contextLoaded);
+
+    (app().querySelector(".btn-generate-skill") as HTMLButtonElement).click();
+    emit({ type: "skillGenerationStarted" });
+    emit({ type: "skillError", errors: ["The AI's response wasn't a valid skill file."] });
+
+    const btn = app().querySelector<HTMLButtonElement>(".btn-generate-skill");
+    expect(btn!.disabled).toBe(false);
+    expect(app().querySelector(".skill-error")?.textContent).toContain("valid skill file");
+  });
+});
