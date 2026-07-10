@@ -217,6 +217,14 @@ Convenience features; regressions matter but are not release-blocking.
   storage format on startup.
 - Sidebar: dropdown to activate none/skill/persona, upload of `.md` files (≤ 512 KB).
   Options page: upload, list, delete skills; create/edit/delete personas.
+- **Generate skill from context tabs**: given one or more context tabs (SF-1) with extracted
+  content, the sidebar "Create Skill from Tabs" control (disabled when there are no context
+  tabs) sends the tabs' content to the configured AI endpoint with a prompt instructing it to
+  produce a skill file (frontmatter + Personality + Knowledge, no Activation), then feeds the
+  response back through the same parser used for uploaded skill files. On success the skill is
+  added to the library and activated exactly like an uploaded skill (`skillLoaded`); a
+  malformed AI response or an AI/config/extraction error surfaces as `skillError`/`configError`
+  and nothing is added to the library.
 
 ### SF-4 Auto-export
 

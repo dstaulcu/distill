@@ -79,6 +79,7 @@ let activeSkillName: string | null = null;
 let activeSkillDescription: string | null = null;
 let skillError: string | null = null;
 let skillErrorTimeout: ReturnType<typeof setTimeout> | null = null;
+let isGeneratingSkill = false;
 
 // ─── Library State ──────────────────────────────────────────────────────────
 
@@ -328,6 +329,7 @@ function handleControllerMessage(msg: ControllerToSidebarMessage): void {
       activeSkillName = msg.name;
       activeSkillDescription = msg.description;
       skillError = null;
+      isGeneratingSkill = false;
       if (skillErrorTimeout) {
         clearTimeout(skillErrorTimeout);
         skillErrorTimeout = null;
@@ -351,7 +353,13 @@ function handleControllerMessage(msg: ControllerToSidebarMessage): void {
       render();
       break;
 
+    case "skillGenerationStarted":
+      isGeneratingSkill = true;
+      render();
+      break;
+
     case "skillError":
+      isGeneratingSkill = false;
       skillError = msg.errors.join(", ");
       if (skillErrorTimeout) {
         clearTimeout(skillErrorTimeout);
@@ -1100,6 +1108,19 @@ function renderSkillSection(): HTMLElement {
 
   controls.appendChild(fileInput);
   controls.appendChild(chooseBtn);
+
+  const generateBtn = el("button", "btn-generate-skill") as HTMLButtonElement;
+  generateBtn.textContent = isGeneratingSkill ? "Generating…" : "Create Skill from Tabs";
+  generateBtn.disabled = isGeneratingSkill || contextTabs.length === 0;
+  generateBtn.title = contextTabs.length === 0
+    ? "Add at least one tab to context before creating a skill"
+    : "Generate a new skill from the knowledge in the current context tabs";
+  generateBtn.addEventListener("click", () => {
+    if (isGeneratingSkill || contextTabs.length === 0) return;
+    skillError = null;
+    sendToController({ type: "generateSkillFromContext" });
+  });
+  controls.appendChild(generateBtn);
 
   if (activeSkillName) {
     const clearBtn = el("button", "btn-clear-skill") as HTMLButtonElement;

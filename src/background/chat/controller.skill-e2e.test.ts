@@ -64,6 +64,20 @@ description: No name field
 Some knowledge here
 `;
 
+const GENERATED_SKILL_RAW = `---
+name: Bedrock Architecture Expert
+description: Knows the service mesh topology and event-driven patterns from the Bedrock docs
+---
+
+## Personality
+I'm an expert on the Bedrock platform's architecture, happy to explain its service mesh and event-driven design.
+
+## Knowledge
+- Microservice boundaries are enforced via the service mesh
+- Event sourcing is implemented with Kafka
+- Inter-service communication uses gRPC
+`;
+
 // ---------------------------------------------------------------------------
 // Test helpers (mirrors controller.test.ts patterns)
 // ---------------------------------------------------------------------------
@@ -613,5 +627,172 @@ describe("Skill E2E: Full skill lifecycle", () => {
         expect(loaded.activation).toBeNull();
       }
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Generate skill from context tabs
+// ---------------------------------------------------------------------------
+
+describe("generateSkillFromContext", () => {
+  it("sends skillGenerationStarted, then adds and activates the AI-derived skill", async () => {
+    const { controller, port, skillLibrary, createStreamingClient } = setup();
+    const mockClient: StreamingAiClient = {
+      streamChatCompletion: vi.fn(async (req: StreamChatCompletionRequest) => {
+        req.onToken(GENERATED_SKILL_RAW);
+        return { ok: true, content: GENERATED_SKILL_RAW } as StreamChatCompletionResult;
+      }),
+    };
+    createStreamingClient.mockReturnValue(mockClient);
+
+    controller.handleConnect(port);
+    const send = port.messageListeners[0];
+
+    send({ type: "init", tabId: 1 });
+    await vi.waitFor(() => {
+      expect(port.messages.some((m) => m.type === "contextLoaded")).toBe(true);
+    });
+    port.messages.length = 0;
+
+    send({ type: "generateSkillFromContext" });
+
+    await vi.waitFor(() => {
+      expect(port.messages.some((m) => m.type === "skillLoaded")).toBe(true);
+    });
+
+    expect(port.messages.some((m) => m.type === "skillGenerationStarted")).toBe(true);
+
+    const loaded = port.messages.find((m) => m.type === "skillLoaded");
+    if (loaded && loaded.type === "skillLoaded") {
+      expect(loaded.name).toBe("Bedrock Architecture Expert");
+      expect(loaded.description).toBe(
+        "Knows the service mesh topology and event-driven patterns from the Bedrock docs",
+      );
+    }
+
+    expect(skillLibrary.addSkill).toHaveBeenCalledTimes(1);
+    expect(skillLibrary.activateSkill).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends the context tabs' extracted content to the AI as the user message", async () => {
+    const { controller, port, capturedMessages, createStreamingClient } = setup();
+    const mockClient: StreamingAiClient = {
+      streamChatCompletion: vi.fn(async (req: StreamChatCompletionRequest) => {
+        capturedMessages.push([...req.messages]);
+        req.onToken(GENERATED_SKILL_RAW);
+        return { ok: true, content: GENERATED_SKILL_RAW } as StreamChatCompletionResult;
+      }),
+    };
+    createStreamingClient.mockReturnValue(mockClient);
+
+    controller.handleConnect(port);
+    const send = port.messageListeners[0];
+
+    send({ type: "init", tabId: 1 });
+    await vi.waitFor(() => {
+      expect(port.messages.some((m) => m.type === "contextLoaded")).toBe(true);
+    });
+
+    capturedMessages.length = 0;
+    send({ type: "generateSkillFromContext" });
+
+    await vi.waitFor(() => {
+      expect(port.messages.some((m) => m.type === "skillLoaded")).toBe(true);
+    });
+
+    const call = capturedMessages[capturedMessages.length - 1];
+    const userMsg = call.find((m) => m.role === "user")!;
+    expect(userMsg.content).toContain("Bedrock Architecture Overview");
+    expect(userMsg.content).toContain("service mesh topology");
+  });
+
+  it("surfaces a skillError and adds nothing to the library when the AI response is not a valid skill file", async () => {
+    const { controller, port, skillLibrary, createStreamingClient } = setup();
+    const mockClient: StreamingAiClient = {
+      streamChatCompletion: vi.fn(async (req: StreamChatCompletionRequest) => {
+        req.onToken("Sorry, I can't help with that.");
+        return { ok: true, content: "Sorry, I can't help with that." } as StreamChatCompletionResult;
+      }),
+    };
+    createStreamingClient.mockReturnValue(mockClient);
+
+    controller.handleConnect(port);
+    const send = port.messageListeners[0];
+
+    send({ type: "init", tabId: 1 });
+    await vi.waitFor(() => {
+      expect(port.messages.some((m) => m.type === "contextLoaded")).toBe(true);
+    });
+    port.messages.length = 0;
+
+    send({ type: "generateSkillFromContext" });
+
+    await vi.waitFor(() => {
+      expect(port.messages.some((m) => m.type === "skillError")).toBe(true);
+    });
+
+    expect(skillLibrary.addSkill).not.toHaveBeenCalled();
+  });
+
+  it("sends a skillError and does not call the AI when there are no context tabs", async () => {
+    const { controller, port, skillLibrary, createStreamingClient } = setup({
+      extractionResult: { ok: false, reason: "extraction-error", detail: "boom" },
+    });
+    controller.handleConnect(port);
+    const send = port.messageListeners[0];
+
+    send({ type: "init", tabId: 1 });
+    await vi.waitFor(() => {
+      expect(port.messages.some((m) => m.type === "contextError")).toBe(true);
+    });
+    port.messages.length = 0;
+
+    send({ type: "generateSkillFromContext" });
+
+    await vi.waitFor(() => {
+      expect(port.messages.some((m) => m.type === "skillError")).toBe(true);
+    });
+
+    const errorMsg = port.messages.find((m) => m.type === "skillError");
+    if (errorMsg && errorMsg.type === "skillError") {
+      expect(errorMsg.errors.join(" ")).toContain("context");
+    }
+    expect(skillLibrary.addSkill).not.toHaveBeenCalled();
+    expect(createStreamingClient).not.toHaveBeenCalled();
+  });
+
+  it("sends configError and never calls the AI when the endpoint isn't configured", async () => {
+    const settings = createMockSettings({ baseUrl: "", modelId: "" });
+    const secureStore = createMockSecureStore();
+    const tabState = createMockTabState();
+    const skillLibrary = createMockSkillLibrary();
+    const extractContent = vi.fn().mockResolvedValue(createMockExtractionResult());
+    const createStreamingClientFn = vi.fn();
+
+    const controller = createChatController({
+      getSettings: vi.fn().mockResolvedValue(settings),
+      getSecureStore: () => secureStore,
+      extractContent,
+      createStreamingClient: createStreamingClientFn,
+      tabState,
+      skillLibrary,
+      clock: () => "2024-01-15T10:00:00.000Z",
+    });
+    const port = createMockPort();
+    controller.handleConnect(port);
+    const send = port.messageListeners[0];
+
+    send({ type: "init", tabId: 1 });
+    await vi.waitFor(() => {
+      expect(port.messages.some((m) => m.type === "configError")).toBe(true);
+    });
+    port.messages.length = 0;
+
+    send({ type: "generateSkillFromContext" });
+
+    await vi.waitFor(() => {
+      expect(port.messages.some((m) => m.type === "configError")).toBe(true);
+    });
+    expect(createStreamingClientFn).not.toHaveBeenCalled();
   });
 });

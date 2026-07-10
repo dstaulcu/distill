@@ -15,6 +15,7 @@ describe("port-protocol", () => {
       expect(isSidebarToControllerMessage({ type: "autoExportDisable", origin: "https://x.com" })).toBe(true);
       expect(isSidebarToControllerMessage({ type: "autoExportStatusRequest", tabId: 5 })).toBe(true);
       expect(isSidebarToControllerMessage({ type: "loadSkill", raw: "# Skill" })).toBe(true);
+      expect(isSidebarToControllerMessage({ type: "generateSkillFromContext" })).toBe(true);
       expect(isSidebarToControllerMessage({ type: "clearSkill" })).toBe(true);
     });
 
@@ -37,6 +38,7 @@ describe("port-protocol", () => {
       expect(isControllerToSidebarMessage({ type: "configError", reason: "not-configured" })).toBe(true);
       expect(isControllerToSidebarMessage({ type: "autoExportStatus", status: null })).toBe(true);
       expect(isControllerToSidebarMessage({ type: "skillLoaded", name: "Dave", description: "A persona", activation: "Hello!" })).toBe(true);
+      expect(isControllerToSidebarMessage({ type: "skillGenerationStarted" })).toBe(true);
       expect(isControllerToSidebarMessage({ type: "skillCleared" })).toBe(true);
       expect(isControllerToSidebarMessage({ type: "skillError", errors: ["Missing name"] })).toBe(true);
     });

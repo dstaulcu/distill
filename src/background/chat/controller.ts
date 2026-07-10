@@ -135,6 +135,9 @@ export function createChatController(opts: CreateChatControllerOptions): ChatCon
           case "loadSkill":
             handleLoadSkill((msg as { raw: string }).raw);
             break;
+          case "generateSkillFromContext":
+            handleGenerateSkillFromContext();
+            break;
           case "clearSkill":
             handleDeactivate();
             break;
@@ -799,9 +802,11 @@ export function createChatController(opts: CreateChatControllerOptions): ChatCon
           return;
         }
 
-        const skill = result.skill;
+        await activateNewSkill(result.skill);
+      }
 
-        // Add to library and activate
+      /** Adds a parsed skill to the library, activates it, and notifies the sidebar. */
+      async function activateNewSkill(skill: SkillDefinition): Promise<void> {
         const stored = await skillLibrary.addSkill(skill);
         await skillLibrary.activateSkill(stored.id);
         activeSkills = [skill];
@@ -834,6 +839,73 @@ export function createChatController(opts: CreateChatControllerOptions): ChatCon
           description: skill.description,
           activation: skill.activation || null,
         });
+      }
+
+      // -----------------------------------------------------------------------
+      // generateSkillFromContext handler — derives a new skill from the
+      // knowledge in the current context tabs via the AI endpoint
+      // -----------------------------------------------------------------------
+
+      async function handleGenerateSkillFromContext(): Promise<void> {
+        if (currentTabId === null) return;
+
+        const settings = await getSettings();
+        if (!settings.ai.baseUrl || !settings.ai.modelId) {
+          send({ type: "configError", reason: "AI not configured. Set the base URL and model in Settings." });
+          return;
+        }
+
+        if (contextTabs.size === 0) {
+          send({ type: "skillError", errors: ["Add at least one tab to context before creating a skill."] });
+          return;
+        }
+
+        await ensureContextContent();
+        const articles = buildContextArticles();
+
+        if (articles.length === 0) {
+          send({ type: "skillError", errors: ["Could not extract content from the context tabs."] });
+          return;
+        }
+
+        send({ type: "skillGenerationStarted" });
+
+        const secureStore = getSecureStore();
+        const apiKey = settings.ai.apiKeyRef
+          ? await secureStore.getSecret(settings.ai.apiKeyRef)
+          : null;
+
+        const client = createStreamingClient({
+          baseUrl: settings.ai.baseUrl,
+          apiKey: apiKey ?? "",
+        });
+
+        const messages: ChatMessage[] = [
+          { role: "system", content: SKILL_GENERATION_SYSTEM_PROMPT },
+          { role: "user", content: buildSkillGenerationUserMessage(articles) },
+        ];
+
+        const result = await client.streamChatCompletion({
+          model: settings.ai.modelId,
+          messages,
+          signal: new AbortController().signal,
+          onToken: () => {
+            /* the generated skill file is only used once complete; no token-by-token preview */
+          },
+        });
+
+        if (!result.ok) {
+          send({ type: "skillError", errors: [result.detail] });
+          return;
+        }
+
+        const parsed = parseSkillFile(result.content.trim());
+        if (!parsed.ok) {
+          send({ type: "skillError", errors: ["The AI's response wasn't a valid skill file.", ...parsed.errors] });
+          return;
+        }
+
+        await activateNewSkill(parsed.skill);
       }
 
       // -----------------------------------------------------------------------
@@ -956,6 +1028,35 @@ function buildDefaultSystemPrompt(): string {
 - **Action Items**: Suggested next steps or actions based on the content
 
 Format your response using Markdown bullet lists.`;
+}
+
+const SKILL_GENERATION_SYSTEM_PROMPT = `You turn web page content into a reusable "skill" file for an AI assistant. Output ONLY the skill file itself — no commentary, no code fences, nothing before or after it.
+
+The skill file format is:
+
+---
+name: <short, descriptive name for the domain/topic covered by the pages>
+description: <one sentence describing what this skill knows>
+---
+
+## Personality
+<2-4 sentences written in first person establishing the assistant's persona and expertise on this topic>
+
+## Knowledge
+<a well-organized synthesis of the key facts, concepts, and details from the provided pages, written so the persona can draw on it as background knowledge in future conversations>
+
+Rules:
+- The frontmatter must start on the very first line with "---".
+- "name" and "description" are required frontmatter fields.
+- The "## Personality" section is required and must not be empty.
+- Do not include an "## Activation" section.
+- Do not wrap the output in Markdown code fences.`;
+
+function buildSkillGenerationUserMessage(articles: ExtractedArticle[]): string {
+  const pages = articles
+    .map((a, i) => `## Page ${i + 1}: ${a.title}\nURL: ${a.sourceUrl}\n\n${a.bodyMarkdown}`)
+    .join("\n\n---\n\n");
+  return `Generate a skill file that captures the knowledge in the following web page(s):\n\n${pages}`;
 }
 
 function buildSummarizationUserMessage(articles: ExtractedArticle[]): string {
